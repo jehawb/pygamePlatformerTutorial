@@ -1,2 +1,6 @@
+# Get these from https://dafluffypotato.com/assets/pg_tutorial in the '00_resources.zip' and don't push them to Github
 data/
 zips/
+
+# Auto generated stuff
+scripts/__pycache__/

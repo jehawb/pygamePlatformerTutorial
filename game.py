@@ -4,31 +4,36 @@
 import sys
 import pygame
 
+from scripts.utils import load_image
+from scripts.entities import PhysicsEntity
+
 class Game:
     def __init__(self):
+
+        # --- GAME SETUP ---
+
         pygame.init()
 
         # Text to be displayed on the window
         pygame.display.set_caption('ninja game')
 
-        # Sets up the window for the game
-        self.screen = pygame.display.set_mode((640, 480))
+        # Sets up the window and the rendering surface for the game, smaller rendering surface is upscaled to fit the window
+        self.screen = pygame.display.set_mode((640, 480))   # The window for the game
+        self.display = pygame.Surface((320, 240))           # The surface in the game for rendering stuff
 
         # Internal clock for the game loop ie. "fps"
         self.clock = pygame.time.Clock()
 
-        # Loading an image to memory, does not render it on the screen, this is done in the gameloop
-        self.img = pygame.image.load('data/images/clouds/cloud_1.png')
-        # The image has a black background, with colorkey you can make it transparent
-        self.img.set_colorkey((0, 0, 0))
+        # --- ENTITIES ---
 
-        # For moving the image
-        self.movement_speed = 5
-        self.img_pos = [160, 260]
+        # Player entity
+        self.player = PhysicsEntity(self, 'player', (50, 50), (8, 15))      # The third parameter is the starting position
         self.movement = [False, False]
+        self.assets = {
+            'player': load_image('entities/player.png')
+        }
 
-        # A rectangle for the collision physics testing
-        self.collision_area = pygame.Rect(50, 50, 300, 50)
+    # --- GAMELOOP ---
 
     def run(self):
 
@@ -36,25 +41,10 @@ class Game:
         while True:
 
             # Fills the whole screen with this color at the start of every frame to "clean", otherwise all moved sprites would leave traces 
-            self.screen.fill((14, 219, 248))
+            self.display.fill((14, 219, 248))
 
-            # Collision rectangle for the image, created every frame as it is inside the gameloop
-            img_r = pygame.Rect(self.img_pos[0], self.img_pos[1], self.img.get_width(), self.img.get_height())
-
-            # Rendered layers in Pygame work in writing order, later in code are rendered on top of previous ones
-
-            # Collision test
-            if img_r.colliderect(self.collision_area):
-                # Draw the rectangle if image collides with it with a blue color
-                pygame.draw.rect(self.screen, (0, 100, 255), self.collision_area)
-            else:
-                # Draw the rectangle if image does not collide with it with a lighter blue color
-                pygame.draw.rect(self.screen, (0, 50, 255), self.collision_area)
-
-            # Updating the images position, with some python's boolean magic which deals if you hold down UP and DOWN simultaneously
-            self.img_pos[1] += (self.movement[1] - self.movement[0]) * self.movement_speed
-            # Renders the image from the loaded memory at the given coords, top-left is "0, 0"
-            self.screen.blit(self.img, self.img_pos)
+            self.player.update((self.movement[1] - self.movement[0], 0))
+            self.player.render(self.display)
 
             # Gets the input and such, preventing the Windows thinking the program has stopped responding
             for event in pygame.event.get():
@@ -65,20 +55,22 @@ class Game:
                     sys.exit()
 
                 # Reading the user input
-                # Up and down movement
+                # Left and right movement
                 if event.type == pygame.KEYDOWN:
-                    # Up arrow key
-                    if event.key == pygame.K_UP:
+                    # Left arrow key
+                    if event.key == pygame.K_LEFT:
                         self.movement[0] = True
-                    # Down arrow key
-                    if event.key == pygame.K_DOWN:
+                    # Right arrow key
+                    if event.key == pygame.K_RIGHT:
                         self.movement[1] = True
                 if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_UP:
+                    if event.key == pygame.K_LEFT:
                         self.movement[0] = False
-                    if event.key == pygame.K_DOWN:
+                    if event.key == pygame.K_RIGHT:
                         self.movement[1] = False
 
+            # Renders the rendering surface on to the window and scale it up
+            self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
             # Updates the screen at the start of every loop or "frame"
             pygame.display.update()
             # Forces the loop to run at 60 fps
