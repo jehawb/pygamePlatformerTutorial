@@ -4,8 +4,9 @@
 import sys
 import pygame
 
-from scripts.utils import load_image
+from scripts.utils import load_image, load_images
 from scripts.entities import PhysicsEntity
+from scripts.tilemap import Tilemap
 
 class Game:
     def __init__(self):
@@ -29,9 +30,19 @@ class Game:
         # Player entity
         self.player = PhysicsEntity(self, 'player', (50, 50), (8, 15))      # The third parameter is the starting position
         self.movement = [False, False]
+
+        # Loading images for entities
         self.assets = {
+            'decor': load_images('tiles/decor'),
+            'grass': load_images('tiles/grass'),
+            'large_decor': load_images('tiles/large_decor'),
+            'stone': load_images('tiles/stone'),
             'player': load_image('entities/player.png')
         }
+
+        # --- GAME MAP ---
+
+        self.tilemap = Tilemap(self, tile_size=16)
 
     # --- GAMELOOP ---
 
@@ -40,11 +51,17 @@ class Game:
         # Gameloop, in this case everything in one loop, you could have one for fisiks, one for logic and so on
         while True:
 
+            # --- RENDERING ---
+
             # Fills the whole screen with this color at the start of every frame to "clean", otherwise all moved sprites would leave traces 
             self.display.fill((14, 219, 248))
 
+            self.tilemap.render(self.display)
+
             self.player.update((self.movement[1] - self.movement[0], 0))
             self.player.render(self.display)
+
+            # --- INPUT READING ---
 
             # Gets the input and such, preventing the Windows thinking the program has stopped responding
             for event in pygame.event.get():
@@ -68,6 +85,8 @@ class Game:
                         self.movement[0] = False
                     if event.key == pygame.K_RIGHT:
                         self.movement[1] = False
+
+            # --- GAME STATE UPDATING ---
 
             # Renders the rendering surface on to the window and scale it up
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
