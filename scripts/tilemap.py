@@ -42,8 +42,14 @@ class Tilemap:
             # No gridding for offgrid tiles
             surf.blit(self.game.assets[tile['type']][tile['variant']], (tile['pos'][0] - offset[0], tile['pos'][1] - offset[1]))
 
-        for loc in self.tilemap:
-            tile = self.tilemap[loc]
-            # Renders the tile in specific location using it's type, variant and position. The position is multiplied with the tile size ie. tile grid size.
-            # Asset loading is done in game.py
-            surf.blit(self.game.assets[tile['type']][tile['variant']], (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+        # Tiles are in a dictionary and checking up something from one is fast no matter how much stuff is in the dictionary
+        # This means you can use it to render only the tiles that should ne on the screen akin to occlusion culling --> Optimization
+
+        # Loops through all the tile places on the screen grid starting from top left
+        # If a tile should be in the grid position, it is rendered
+        for x in range(offset[0] // self.tile_size, (offset[0] + surf.get_width()) // self.tile_size + 1):
+            for y in range(offset[1] // self.tile_size, (offset[1] + surf.get_height()) // self.tile_size + 1):
+                loc = str(x) + ';' + str(y)
+                if loc in self.tilemap:
+                    tile = self.tilemap[loc]
+                    surf.blit(self.game.assets[tile['type']][tile['variant']], (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
