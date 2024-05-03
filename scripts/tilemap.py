@@ -10,11 +10,12 @@ class Tilemap:
         self.tilemap = {}           # Tiles on a grid, such as platforms
         self.offgrid_tiles = []     # Tiles not on a grid, such as background
 
-        for i in range(10):
-            # A horizontal line of grass tiles
-            self.tilemap[str(3 + i) + ';10'] = {'type': 'grass', 'variant': 1, 'pos': (3 + i, 10)}
-            # A vertical line of stone tiles
-            self.tilemap['10;' + str(5 + i)] = {'type': 'stone', 'variant': 1, 'pos': (10, 5 + i)}
+        # # Creating a simple level for testing, DELETE WHEN NO LONGER NEEDED !!!
+        # for i in range(10):
+        #     # A horizontal line of grass tiles
+        #     self.tilemap[str(3 + i) + ';10'] = {'type': 'grass', 'variant': 1, 'pos': (3 + i, 10)}
+        #     # A vertical line of stone tiles
+        #     self.tilemap['10;' + str(5 + i)] = {'type': 'stone', 'variant': 1, 'pos': (10, 5 + i)}
 
     # Checking the neighboring tiles for physics calculations, no need to check all of the tiles
     # Figure out where in the grid the given position is and get the neighbouring tiles if present
