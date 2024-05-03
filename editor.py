@@ -47,14 +47,15 @@ class Editor:
             self.scroll[0] += (self.movement[1] - self.movement[0]) * 2
             self.scroll[1] += (self.movement[3] - self.movement[2]) * 2
 
+            # Rendering
             render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
-
             self.tilemap.render(self.display, offset=render_scroll)
 
             # Selecting the tile to be placed on to the level
             current_tile_img = self.assets[self.tile_list[self.tile_group]][self.tile_variant]
             current_tile_img.set_alpha(100)
 
+            # Mouse position
             mpos = pygame.mouse.get_pos()
             mpos = (mpos[0] / RENDER_SCALE, mpos[1] / RENDER_SCALE)     # The screen is not 1:1 so you must take this in account with mouse position aswell
             tile_pos = (int((mpos[0] + self.scroll[0]) // self.tilemap.tile_size ), int((mpos[1] + self.scroll[1]) // self.tilemap.tile_size))  # Aligns the tile_pos into the grid
@@ -86,10 +87,12 @@ class Editor:
 
             for event in pygame.event.get():
 
+                # System
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
+                # Mouse
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:   # LMB
                         self.clicking = True
@@ -115,7 +118,8 @@ class Editor:
                         self.clicking = False
                     if event.button == 3:
                         self.right_clicking = False
-
+    
+                # Keyboard
                 # Sadly only WASD keyboards supported for the editor
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_a:
@@ -143,10 +147,9 @@ class Editor:
                     if event.key == pygame.K_LSHIFT:
                         self.shift = False
 
+            # --- RENDERING AND UPDATING ---
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
-
             pygame.display.update()
-
             self.clock.tick(60)
 
 Editor().run()
