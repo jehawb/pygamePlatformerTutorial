@@ -1,7 +1,24 @@
+import json
+
 import pygame
+
+# Rules for autotiling, tile has neighbors which determine what the tile itself should look like, these are the neighbors which the neighbor search results are compared to
+AUTOTILE_MAP = {
+    # Sorted is used to make sure the neighbors are checked in consistent order, also list can't be used as a key -> tupling
+    tuple(sorted([(1, 0), (0, 1)])): 0,
+    tuple(sorted([(1, 0), (0, 1), (-1, 0)])): 1,
+    tuple(sorted([(-1, 0), (0, 1)])): 2,
+    tuple(sorted([(-1, 0), (0, -1), (0, 1)])): 3,   # This coulb be a typo
+    tuple(sorted([(-1, 0), (0, -1)])): 4,
+    tuple(sorted([(-1, 0), (0, -1), (1, 0)])): 5,
+    tuple(sorted([(1, 0), (0, -1)])): 6,
+    tuple(sorted([(1, 0), (0, -1), (0, 1)])): 7,
+    tuple(sorted([(1, 0), (-1, 0), (0, 1), (0, -1)])): 8,
+}
 
 NEIGHBOR_OFFSETS = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (0, 0), (-1, 1), (0, 1), (1, 1)]
 PHYSICS_TILES = {'grass', 'stone'}      # Faster to check random things from a set than from a list
+AUTOTILE_TYPES = {'grass', 'stone'}
 
 class Tilemap:
     def __init__(self, game, tile_size=16):
@@ -28,6 +45,20 @@ class Tilemap:
                 tiles.append(self.tilemap[check_loc])
         return tiles
     
+    def save(self, path):
+        f = open(path, 'w')
+        json.dump({'tilemap': self.tilemap, 'tile_size': self.tile_size, 'offgrid': self.offgrid_tiles}, f)
+        f.close()   # This saves the file aswell
+
+    def load(self, path):
+        f = open(path, 'r')
+        map_data = json.load(f)
+        f.close()
+
+        self.tilemap = map_data['tilemap']
+        self.tile_size = map_data['tile_size']
+        self.offgrid_tiles = map_data['offgrid']
+    
     # More physics in entities.py
     # Checks to see if there is a tile with physics applied to it in the nearby tiles and creates a rectangular over it for physics calculations
     def physics_rects_around(self, pos):
@@ -36,6 +67,20 @@ class Tilemap:
             if tile['type'] in PHYSICS_TILES:
                 rects.append(pygame.Rect(tile['pos'][0] * self.tile_size, tile['pos'][1] * self.tile_size, self.tile_size, self.tile_size))
         return rects
+    
+    # Goes through all tiles on grid and checks their neighboring tiles to figure out how their variant should look
+    def autotile(self):
+        for loc in self.tilemap:
+            tile = self.tilemap[loc]
+            neighbors = set()
+            for shift in [(1, 0), (-1, 0), (0, -1), (0, 1)]:
+                check_loc = str(tile['pos'][0] + shift[0]) + ';' + str(tile['pos'][1] + shift[1])
+                if check_loc in self.tilemap:   # Neighbor exists
+                    if self.tilemap[check_loc]['type'] == tile['type']:     # Only tiles of same type are neighbors
+                        neighbors.add(shift)
+            neighbors = tuple(sorted(neighbors))
+            if (tile['type'] in AUTOTILE_TYPES) and (neighbors in AUTOTILE_MAP):    # Only autotile the types in AUTOTILE_TYPES ie. grass and stone as of now
+                tile['variant'] = AUTOTILE_MAP[neighbors]
 
     # Off grid tiles rendered before on grid ones
     def render(self, surf, offset=(0, 0)):

@@ -53,6 +53,7 @@ class Game:
         self.clouds = Clouds(self.assets['clouds'], count=16)
 
         self.tilemap = Tilemap(self, tile_size=16)
+        self.tilemap.load('map.json')
 
         # --- CAMERA ---
 
