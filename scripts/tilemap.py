@@ -27,12 +27,27 @@ class Tilemap:
         self.tilemap = {}           # Tiles on a grid, such as platforms
         self.offgrid_tiles = []     # Tiles not on a grid, such as background
 
-        # # Creating a simple level for testing, DELETE WHEN NO LONGER NEEDED !!!
-        # for i in range(10):
-        #     # A horizontal line of grass tiles
-        #     self.tilemap[str(3 + i) + ';10'] = {'type': 'grass', 'variant': 1, 'pos': (3 + i, 10)}
-        #     # A vertical line of stone tiles
-        #     self.tilemap['10;' + str(5 + i)] = {'type': 'stone', 'variant': 1, 'pos': (10, 5 + i)}
+    # Find given tile's positions in offgrid tiles and ongrid tiles, used for particles for example
+    def extract(self, id_pairs, keep=False):
+        matches = []
+        
+        for tile in self.offgrid_tiles.copy():
+            if (tile['type'], tile['variant']) in id_pairs:
+                matches.append(tile.copy()) # Makes a copy of the tile so not to work with the original one
+                if not keep:
+                    self.offgrid_tiles.remove(tile)
+
+        for loc in self.tilemap:
+            tile = self.tilemap[loc]
+            if (tile['type'], tile['variant']) in id_pairs:
+                matches.append(tile.copy())
+                matches[-1]['pos'] = matches[-1]['pos'].copy()  # Making a clean copy of the tile data for modification
+                matches[-1]['pos'][0] *= self.tile_size
+                matches[-1]['pos'][1] *= self.tile_size
+                if not keep:
+                    del self.tilemap[loc]
+        
+        return matches
 
     # Checking the neighboring tiles for physics calculations, no need to check all of the tiles
     # Figure out where in the grid the given position is and get the neighbouring tiles if present
