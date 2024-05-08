@@ -14,6 +14,8 @@ class PhysicsEntity:
         self.flip = False   # The facing of the images of the entity
         self.set_action('idle')
 
+        self.last_movement = [0, 0]
+
     def rect(self):
         return pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
     
@@ -60,6 +62,9 @@ class PhysicsEntity:
         if movement[0] < 0:
             self.flip = True
 
+        # Saves the last input for movement to be checked later
+        self.last_movement = movement
+
         # Velocity from gravity with terminal velocity, min() picks the smaller one of the two parameters
         self.velocity[1] = min(5, self.velocity[1] + 0.1)
 
@@ -78,21 +83,65 @@ class Player(PhysicsEntity):
     def __init__(self, game, pos, size):
         super().__init__(game, 'player', pos, size)
         self.air_time = 0
+        self.jumps = 1              # Number of jumps available for player, make sure you change the jump restoration aswell, currently in collision with the ground in update()
+        self.wall_slide = False     # Wall sliding
 
     def update(self, tilemap, movement=(0, 0)):
         super().update(tilemap, movement=movement)
 
         # Setting the player actions for animations
-        self.air_time += 1  # Weird implementation but OK
+        self.air_time += 1  # Weird implementation but OK, set right back to 0 if grounded
         
+        # Grounding
         if self.collisions['down']:
             self.air_time = 0
+            self.jumps = 1      # Restores the jumps
 
-        if self.air_time > 4:
-            self.set_action('jump')
-        elif movement[0] != 0:
-            self.set_action('run')
+        # Touching wall mid-air
+        self.wall_slide = False
+        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 4:
+            self.wall_slide = True
+            self.velocity[1] = min(self.velocity[1], 0.5)   # Capping the downward velocity when wall sliding
+            if self.collisions['right']:
+                self.flip = False
+            else:
+                self.flip = True
+            self.set_action('wall_slide')
+
+        # Mid-air, running and idle animations overriden by wall slide
+        if not self.wall_slide:
+            if self.air_time > 4:
+                self.set_action('jump')
+            elif movement[0] != 0:
+                self.set_action('run')
+            else:
+                self.set_action('idle')
+
+        # Brings the player to halt if moving automagically horizontally
+        if self.velocity[0] > 0:
+            self.velocity[0] = max(self.velocity[0] - 0.1, 0)
         else:
-            self.set_action('idle')
+            self.velocity[0] = min(self.velocity[0] + 0.1, 0)
+
+    def jump(self):
+        if self.wall_slide:
+            if self.flip and self.last_movement[0] < 0:
+                self.velocity[0] = 3.5  # Pushes player off the wall when jumping from wall_slide
+                self.velocity[1] = -2.5 # Not the full jump force
+                self.air_time = 5
+                self.jumps = max(0, self.jumps -1)  # Can jump from the wall even if no jumps left, also consumes one jump
+                return True     # Returns boolean for possible future checks
+            elif not self.flip and self.last_movement[0] > 0:
+                self.velocity[0] = -3.5
+                self.velocity[1] = -2.5
+                self.air_time = 5
+                self.jumps = max(0, self.jumps -1)
+                return True
+        
+        elif self.jumps:
+            self.velocity[1] = -3   # Jumping makes player go up!
+            self.jumps -= 1         # Jumping consumes jumps
+            self.air_time = 5       # Jumping starts the jump animation
+            return True
 
 

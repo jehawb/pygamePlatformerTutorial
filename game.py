@@ -126,14 +126,13 @@ class Game:
                     sys.exit()
 
                 # Reading the user input
-                # Left and right movement
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_LEFT:
                         self.movement[0] = True
                     if event.key == pygame.K_RIGHT:
                         self.movement[1] = True
                     if event.key == pygame.K_UP:
-                        self.player.velocity[1] = -3    # Jumping using the velocity
+                        self.player.jump()      # Jumping using the function
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT:
