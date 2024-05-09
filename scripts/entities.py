@@ -4,6 +4,7 @@ import random
 import pygame
 
 from scripts.particle import Particle
+from scripts.spark import Spark
 
 class PhysicsEntity:
     def __init__(self, game, e_type, pos, size):
@@ -99,6 +100,18 @@ class Enemy(PhysicsEntity):
             else:
                 self.flip = not self.flip       # No solid ground found ahead, flip the entity
             self.walking = max(0, self.walking - 1)     # Reduing the walk timer
+            if not self.walking:    # Shooting script, note that this is one frame window for this branch after the enemy has stopped walking
+                dis = (self.game.player.pos[0] - self.pos[0], self.game.player.pos[1] - self.pos[1])
+                if (abs(dis[1] < 16)):
+                    if (self.flip and dis[0] < 0):  # If looking to left and player is to the left
+                        self.game.projectiles.append([[self.rect().centerx - 7 , self.rect().centery], -1.5, 0])
+                        for i in range(4):
+                            # Location of the last projectile, -1 meaning one from the end, given as the initial location, also some randomization added to angle and speed
+                            self.game.sparks.append(Spark(self.game.projectiles[-1][0], random.random() - 0.5 + math.pi, 2 + random.random()))
+                    if (not self.flip and dis[0] > 0):
+                        self.game.projectiles.append([[self.rect().centerx + 7 , self.rect().centery], 1.5, 0])
+                        for i in range(4):
+                            self.game.sparks.append(Spark(self.game.projectiles[-1][0], random.random() - 0.5, 2 + random.random()))
         elif random.random() < 0.01:                    # 1% chance of happening per frame -> game running at 60 fps means around every 1.6s
             self.walking = random.randint(30, 120)      # How long to walk for
 
@@ -108,6 +121,16 @@ class Enemy(PhysicsEntity):
             self.set_action('run')
         else:
             self.set_action('idle')
+
+    # Used to render the weapon on top of the entity 
+    def render(self, surf, offset=(0, 0)):
+        super().render(surf, offset=offset)
+
+        if self.flip:
+            surf.blit(pygame.transform.flip(self.game.assets['gun'], True, False), (self.rect().centerx - 4 - self.game.assets['gun'].get_width() - offset[0], self.rect().centery - offset[1]))   # Flips the gun and offsets it to fit the enemy better
+        else:
+            surf.blit(self.game.assets['gun'], (self.rect().centerx + 4 - offset[0], self.rect().centery - offset[1]))
+
 
 # Player entity inheriting much of the general entity's functionality
 class Player(PhysicsEntity):

@@ -7,6 +7,7 @@ import math
 
 import pygame
 
+from scripts.spark import Spark
 from scripts.utils import load_image, load_images, Animation
 from scripts.entities import PhysicsEntity, Player, Enemy
 from scripts.tilemap import Tilemap
@@ -50,6 +51,8 @@ class Game:
             'player/wall_slide': Animation(load_images('entities/player/wall_slide')),
             'particle/leaf': Animation(load_images('particles/leaf'), img_dur=20, loop=False),
             'particle/particle': Animation(load_images('particles/particle'), img_dur=6, loop=False),
+            'gun': load_image('gun.png'),
+            'projectile': load_image('projectile.png'),
         }
 
         # Player entity
@@ -61,7 +64,11 @@ class Game:
         self.clouds = Clouds(self.assets['clouds'], count=16)
 
         self.tilemap = Tilemap(self, tile_size=16)
-        self.tilemap.load('map.json')
+        
+        self.load_level(0)
+
+    def load_level(self, map_id):
+        self.tilemap.load('data/maps/' + str(map_id) + '.json')
 
         # --- PARTICLES ---
 
@@ -69,8 +76,6 @@ class Game:
         for tree in self.tilemap.extract([('large_decor', 2)], keep=True):
             self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))  # Rectangle here in this size makes sense for the tree tile
         print(self.leaf_spawners)
-
-        self.particles = []
 
         # --- ENTITY SPAWNERS ---
 
@@ -81,6 +86,12 @@ class Game:
                 self.player.pos = spawner['pos']
             else:
                 self.enemies.append(Enemy(self, spawner['pos'], (8, 15)))
+
+        # --- LISTS FOR SMALL STUFF ---
+
+        self.projectiles = []
+        self.particles = []
+        self.sparks = []
 
         # --- CAMERA ---
 
@@ -121,6 +132,34 @@ class Game:
 
             self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
             self.player.render(self.display, offset=render_scroll)
+
+            # Outline for projectile[[x, y], direction, timer]
+            for projectile in self.projectiles.copy():
+                projectile[0][0] += projectile[1]   # Adding the projectile speed to the projectile's x-axis position
+                projectile[2] += 1                  # Adding to the projectile timer
+                img = self.assets['projectile']
+                self.display.blit(img, (projectile[0][0] - img.get_width() / 2 - render_scroll[0], projectile[0][1] - img.get_height() / 2 - render_scroll[1]))
+                if self.tilemap.solid_check(projectile[0]):     # Deleting the projectile if hitting wall
+                    self.projectiles.remove(projectile)
+                    for i in range(4):
+                            # Sparks to the opposing direction of projectile
+                            self.sparks.append(Spark(projectile[0], random.random() - 0.5 + (math.pi if projectile[1] > 0 else 0), 2 + random.random()))
+                elif projectile[2] > 360:                       # Deleting the projectile if timing out in 6s
+                    self.projectiles.remove(projectile)
+                elif abs(self.player.dashing) < 50:             # Player can dash through projectiles
+                    if self.player.rect().collidepoint(projectile[0]):      # Deleting the projectile if hitting player
+                        self.projectiles.remove(projectile)
+                        for i in range(30):     # Sparks and particles on player hit
+                            angle = random.random() * math.pi * 2   # Random angle in a circle
+                            speed = random.random() * 5
+                            self.sparks.append(Spark(self.player.rect().center, angle, 2 + random.random()))
+                            self.particles.append(Particle(self, 'particle', self.player.rect().center, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
+
+            for spark in self.sparks.copy():
+                kill = spark.update()
+                spark.render(self.display, offset=render_scroll)
+                if kill:
+                    self.sparks.remove(spark)
 
             # Particle management
             for particle in self.particles.copy():
