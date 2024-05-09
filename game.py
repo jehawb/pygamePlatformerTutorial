@@ -75,7 +75,6 @@ class Game:
         self.leaf_spawners = []
         for tree in self.tilemap.extract([('large_decor', 2)], keep=True):
             self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))  # Rectangle here in this size makes sense for the tree tile
-        print(self.leaf_spawners)
 
         # --- ENTITY SPAWNERS ---
 
@@ -97,6 +96,10 @@ class Game:
 
         self.scroll = [0, 0]
 
+        # --- PLAYER ENTITY STATE ---
+
+        self.dead = 0
+
     # --- GAMELOOP ---
 
     def run(self):
@@ -109,6 +112,12 @@ class Game:
 
             # Fills the whole screen with background image at the start of every frame to "clean", otherwise all moved sprites would leave traces 
             self.display.blit(self.assets['background'], (0, 0))
+
+            # Player death
+            if self.dead:   # Timer starts after player death
+                self.dead += 1
+                if self.dead > 40:      # Loading level 0 after 40 frames of death
+                    self.load_level(0)
 
             # Moves the camera centering on the player with smoothing
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
@@ -127,11 +136,14 @@ class Game:
             self.tilemap.render(self.display, offset=render_scroll)
 
             for enemy in self.enemies.copy():
-                enemy.update(self.tilemap, (0, 0))
+                kill = enemy.update(self.tilemap, (0, 0))
                 enemy.render(self.display, offset=render_scroll)
+                if kill:
+                    self.enemies.remove(enemy)
 
-            self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
-            self.player.render(self.display, offset=render_scroll)
+            if not self.dead:   # No player rendering if dead
+                self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
+                self.player.render(self.display, offset=render_scroll)
 
             # Outline for projectile[[x, y], direction, timer]
             for projectile in self.projectiles.copy():
@@ -149,6 +161,7 @@ class Game:
                 elif abs(self.player.dashing) < 50:             # Player can dash through projectiles
                     if self.player.rect().collidepoint(projectile[0]):      # Deleting the projectile if hitting player
                         self.projectiles.remove(projectile)
+                        self.dead += 1
                         for i in range(30):     # Sparks and particles on player hit
                             angle = random.random() * math.pi * 2   # Random angle in a circle
                             speed = random.random() * 5
