@@ -158,6 +158,10 @@ class Player(PhysicsEntity):
 
         # Setting the player actions for animations
         self.air_time += 1  # Weird implementation but OK, set right back to 0 if grounded
+
+        # Handles the player falling off the screen
+        if self.air_time > 120:
+            self.game.dead += 1  # Starts a sped up death timer
         
         # Grounding
         if self.collisions['down']:
