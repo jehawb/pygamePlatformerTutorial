@@ -83,6 +83,32 @@ class PhysicsEntity:
     def render(self, surf, offset=(0, 0)):
         surf.blit(pygame.transform.flip(self.animation.img(), self.flip, False), (self.pos[0] - offset[0] + self.anim_offset[0], self.pos[1] - offset[1] + self.anim_offset[1]))
 
+class Enemy(PhysicsEntity):
+    def __init__(self, game, pos, size):
+        super().__init__(game, 'enemy', pos, size)
+
+        self.walking = 0
+
+    def update(self, tilemap, movement=(0, 0)):
+        if self.walking:
+            if tilemap.solid_check((self.rect().centerx + (-7 if self.flip else 7), self.pos[1] + 23)):   # Checking seven pixels ahead and 23 below for solid ground
+                if (self.collisions['right'] or self.collisions['left']):   # If running into something on right or left
+                    self.flip = not self.flip
+                else:
+                    movement = (movement[0] - 0.5 if self.flip else 0.5, movement[1])
+            else:
+                self.flip = not self.flip       # No solid ground found ahead, flip the entity
+            self.walking = max(0, self.walking - 1)     # Reduing the walk timer
+        elif random.random() < 0.01:                    # 1% chance of happening per frame -> game running at 60 fps means around every 1.6s
+            self.walking = random.randint(30, 120)      # How long to walk for
+
+        super().update(tilemap, movement=movement)
+
+        if movement[0] != 0:
+            self.set_action('run')
+        else:
+            self.set_action('idle')
+
 # Player entity inheriting much of the general entity's functionality
 class Player(PhysicsEntity):
     def __init__(self, game, pos, size):

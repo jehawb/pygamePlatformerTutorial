@@ -8,7 +8,7 @@ import math
 import pygame
 
 from scripts.utils import load_image, load_images, Animation
-from scripts.entities import PhysicsEntity, Player
+from scripts.entities import PhysicsEntity, Player, Enemy
 from scripts.tilemap import Tilemap
 from scripts.clouds import Clouds
 from scripts.particle import Particle
@@ -41,6 +41,8 @@ class Game:
             'player': load_image('entities/player.png'),
             'background': load_image('background.png'),
             'clouds': load_images('clouds'),
+            'enemy/idle': Animation(load_images('entities/enemy/idle'), img_dur=6),
+            'enemy/run': Animation(load_images('entities/enemy/run'), img_dur=4),
             'player/idle': Animation(load_images('entities/player/idle'), img_dur=6),
             'player/run': Animation(load_images('entities/player/run'), img_dur=4),
             'player/jump': Animation(load_images('entities/player/jump')),
@@ -61,7 +63,6 @@ class Game:
         self.tilemap = Tilemap(self, tile_size=16)
         self.tilemap.load('map.json')
 
-
         # --- PARTICLES ---
 
         self.leaf_spawners = []
@@ -70,6 +71,16 @@ class Game:
         print(self.leaf_spawners)
 
         self.particles = []
+
+        # --- ENTITY SPAWNERS ---
+
+        self.enemies = []
+
+        for spawner in self.tilemap.extract([('spawners', 0), ('spawners', 1)]):
+            if spawner['variant'] == 0:
+                self.player.pos = spawner['pos']
+            else:
+                self.enemies.append(Enemy(self, spawner['pos'], (8, 15)))
 
         # --- CAMERA ---
 
@@ -103,6 +114,10 @@ class Game:
             self.clouds.render(self.display, offset=render_scroll)
 
             self.tilemap.render(self.display, offset=render_scroll)
+
+            for enemy in self.enemies.copy():
+                enemy.update(self.tilemap, (0, 0))
+                enemy.render(self.display, offset=render_scroll)
 
             self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
             self.player.render(self.display, offset=render_scroll)

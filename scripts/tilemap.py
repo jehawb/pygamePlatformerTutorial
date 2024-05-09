@@ -73,6 +73,13 @@ class Tilemap:
         self.tilemap = map_data['tilemap']
         self.tile_size = map_data['tile_size']
         self.offgrid_tiles = map_data['offgrid']
+
+    # For checking if a tile in this location is a solid one, used for example enemies to see if they are at the edge of a platform
+    def solid_check(self, pos):
+        tile_loc = str(int(pos[0] // self.tile_size)) + ';' + str(int(pos[1] // self.tile_size))
+        if tile_loc in self.tilemap:                                # Does the location exist?
+            if self.tilemap[tile_loc]['type'] in PHYSICS_TILES:     # Is it physics tile?
+                return self.tilemap[tile_loc]                       # Returns atleast something if it is solid, can be used to see if there is something
     
     # More physics in entities.py
     # Checks to see if there is a tile with physics applied to it in the nearby tiles and creates a rectangular over it for physics calculations
