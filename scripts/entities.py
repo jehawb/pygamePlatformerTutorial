@@ -125,6 +125,7 @@ class Enemy(PhysicsEntity):
         # Enemy hit while player is dashing
         if abs(self.game.player.dashing) >= 50:
             if self.rect().colliderect(self.game.player.rect()):
+                self.game.screenshake = max(16, self.game.screenshake)
                 for i in range(30):     # Sparks and particles on player hit
                             angle = random.random() * math.pi * 2   # Random angle in a circle
                             speed = random.random() * 5
@@ -161,6 +162,8 @@ class Player(PhysicsEntity):
 
         # Handles the player falling off the screen
         if self.air_time > 120:
+            if not self.game.dead:
+                self.game.screenshake = max(16, self.game.screenshake)
             self.game.dead += 1  # Starts a sped up death timer
         
         # Grounding

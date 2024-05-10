@@ -1,6 +1,7 @@
 # A game made by following DaFluffyPotato's video tutorial: https://www.youtube.com/watch?v=2gABYM5M0ww
 # !!! Get the 'data' folder from https://dafluffypotato.com/assets/pg_tutorial in the '00_resources.zip' file !!!
 
+import os
 import sys
 import random
 import math
@@ -25,8 +26,9 @@ class Game:
         pygame.display.set_caption('ninja game')
 
         # Sets up the window and the rendering surface for the game, smaller rendering surface is upscaled to fit the window
-        self.screen = pygame.display.set_mode((640, 480))   # The window for the game
-        self.display = pygame.Surface((320, 240))           # The surface in the game for rendering stuff
+        self.screen = pygame.display.set_mode((640, 480))           # The window for the game
+        self.display = pygame.Surface((320, 240), pygame.SRCALPHA)  # The surface in the game for rendering stuff
+        self.display_2 = pygame.Surface((320, 240))                 # For the outlines, things rendered on to display_2 won't get the outlines
 
         # Internal clock for the game loop ie. "fps"
         self.clock = pygame.time.Clock()
@@ -65,7 +67,10 @@ class Game:
 
         self.tilemap = Tilemap(self, tile_size=16)
         
-        self.load_level(0)
+        self.level = 0
+        self.load_level(self.level)
+
+        self.screenshake = 0
 
     def load_level(self, map_id):
         self.tilemap.load('data/maps/' + str(map_id) + '.json')
@@ -101,6 +106,11 @@ class Game:
 
         self.dead = 0
 
+        # --- LEVEL ---
+
+        # Negative number is to keep track of the transition mathematically (basically the effect needs this)
+        self.transition = -30
+
     # --- GAMELOOP ---
 
     def run(self):
@@ -111,14 +121,30 @@ class Game:
             # --- RENDERING ---
             # Later rendered entities overlap the previously rendered
 
+            # Fill the whole screen with transparency
+            self.display.fill((0, 0, 0, 0))
             # Fills the whole screen with background image at the start of every frame to "clean", otherwise all moved sprites would leave traces 
-            self.display.blit(self.assets['background'], (0, 0))
+            self.display_2.blit(self.assets['background'], (0, 0))
+
+            # Screenshake, defaults back to 0 in few moments
+            self.screenshake = max(0, self.screenshake - 1)
+
+            # Level transition timer and logic for completing a level (enemy list is empty)
+            if not len(self.enemies):
+                self.transition += 1
+                if self.transition > 30:
+                    self.level = min(self.level + 1, len(os.listdir('data/maps')) - 1)      # No loading levels that do not exist
+                    self.load_level(self.level)
+            if self.transition < 0:
+                self.transition += 1
 
             # Player death
             if self.dead:   # Timer starts after player death
                 self.dead += 1
+                if self.dead >= 10:     # Triggers the transition
+                    self.transition = min(30, self.transition + 1)  # This prevents this trigger from adding to level count
                 if self.dead > 40:      # Loading level 0 after 40 frames of death
-                    self.load_level(0)
+                    self.load_level(self.level)
 
             # Moves the camera centering on the player with smoothing
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
@@ -132,7 +158,7 @@ class Game:
                     self.particles.append(Particle(self, 'leaf', pos, velocity=[0.05, 0.3], frame=random.randint(0, 20)))   # Randomizes the starting leaf frame aswell, AFAIK not working atm the moment
 
             self.clouds.update()
-            self.clouds.render(self.display, offset=render_scroll)
+            self.clouds.render(self.display_2, offset=render_scroll)
 
             self.tilemap.render(self.display, offset=render_scroll)
 
@@ -163,6 +189,7 @@ class Game:
                     if self.player.rect().collidepoint(projectile[0]):      # Deleting the projectile if hitting player
                         self.projectiles.remove(projectile)
                         self.dead += 1
+                        self.screenshake = max(16, self.screenshake)  # Allows the bigger screenshakes to override the smaller ones
                         for i in range(30):     # Sparks and particles on player hit
                             angle = random.random() * math.pi * 2   # Random angle in a circle
                             speed = random.random() * 5
@@ -174,6 +201,12 @@ class Game:
                 spark.render(self.display, offset=render_scroll)
                 if kill:
                     self.sparks.remove(spark)
+
+            # Mask from the dipslay with everything that needs the outline
+            display_mask = pygame.mask.from_surface(self.display)
+            display_sillhouette = display_mask.to_surface(setcolor=(0, 0, 0, 180), unsetcolor=(0, 0, 0, 0))
+            for offset in [(-1, 0), (1, 0), (0, -1), (0, 1)]:   # Basicly rendering four dropshadows for everything
+                self.display_2.blit(display_sillhouette, offset)
 
             # Particle management
             for particle in self.particles.copy():
@@ -213,8 +246,20 @@ class Game:
 
             # --- GAME STATE UPDATING ---
 
+            # Somewhat of a performance hog as a another surface is drawn
+            if self.transition:
+                transition_surf = pygame.Surface(self.display.get_size())
+                # Uses the changing transition value for the radius
+                pygame.draw.circle(transition_surf, (255, 255, 255), (self.display.get_width() // 2, self.display.get_height() // 2), (30 - abs(self.transition)) * 8)
+                transition_surf.set_colorkey((255, 255, 255))   # Makes this surface transparent as the drawn circle is black
+                self.display.blit(transition_surf, (0, 0))
+
+            # Merges the display_2 and display
+            self.display_2.blit(self.display, (0, 0))
+            # Picks random values between screenshake value and 0, defaults back to (0, 0) after few moments
+            screenshake_offset = (random.random() * self.screenshake - self.screenshake / 2, random.random() * self.screenshake - self.screenshake / 2)
             # Renders the rendering surface on to the window and scale it up
-            self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
+            self.screen.blit(pygame.transform.scale(self.display_2, self.screen.get_size()), screenshake_offset)
             # Updates the screen at the start of every loop or "frame"
             pygame.display.update()
             # Forces the loop to run at 60 fps
