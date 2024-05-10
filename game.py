@@ -33,8 +33,6 @@ class Game:
         # Internal clock for the game loop ie. "fps"
         self.clock = pygame.time.Clock()
 
-        # --- ENTITIES ---
-
         # Loading images for entities
         self.assets = {
             'decor': load_images('tiles/decor'),
@@ -56,6 +54,22 @@ class Game:
             'gun': load_image('gun.png'),
             'projectile': load_image('projectile.png'),
         }
+
+        # Loading sound effects, Pygame works best with .wav files
+        self.sfx = {
+            'jump': pygame.mixer.Sound('data/sfx/jump.wav'),
+            'dash': pygame.mixer.Sound('data/sfx/dash.wav'),
+            'hit': pygame.mixer.Sound('data/sfx/hit.wav'),
+            'shoot': pygame.mixer.Sound('data/sfx/shoot.wav'),
+            'ambience': pygame.mixer.Sound('data/sfx/ambience.wav'),
+        }
+
+        # Setting sound effect volumes
+        self.sfx['jump'].set_volume(0.7)
+        self.sfx['dash'].set_volume(0.3)
+        self.sfx['hit'].set_volume(0.8)
+        self.sfx['shoot'].set_volume(0.4)
+        self.sfx['ambience'].set_volume(0.2)
 
         # Player entity
         self.player = Player(self, (50, 50), (8, 15))      # The third parameter is the starting position
@@ -115,6 +129,12 @@ class Game:
 
     def run(self):
 
+        # Game music and ambience
+        pygame.mixer.music.load('data/music.wav')
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
+        self.sfx['ambience'].play(-1)
+
         # Gameloop, in this case everything in one loop, you could have one for fisiks, one for logic and so on
         while True:
 
@@ -172,6 +192,8 @@ class Game:
                 self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
                 self.player.render(self.display, offset=render_scroll)
 
+            # --- PROJECTILES ---
+
             # Outline for projectile[[x, y], direction, timer]
             for projectile in self.projectiles.copy():
                 projectile[0][0] += projectile[1]   # Adding the projectile speed to the projectile's x-axis position
@@ -189,6 +211,7 @@ class Game:
                     if self.player.rect().collidepoint(projectile[0]):      # Deleting the projectile if hitting player
                         self.projectiles.remove(projectile)
                         self.dead += 1
+                        self.sfx['hit'].play()
                         self.screenshake = max(16, self.screenshake)  # Allows the bigger screenshakes to override the smaller ones
                         for i in range(30):     # Sparks and particles on player hit
                             angle = random.random() * math.pi * 2   # Random angle in a circle
@@ -196,11 +219,15 @@ class Game:
                             self.sparks.append(Spark(self.player.rect().center, angle, 2 + random.random()))
                             self.particles.append(Particle(self, 'particle', self.player.rect().center, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
 
+            # --- SPARKS ---
+
             for spark in self.sparks.copy():
                 kill = spark.update()
                 spark.render(self.display, offset=render_scroll)
                 if kill:
                     self.sparks.remove(spark)
+
+            # --- OUTLINES ---
 
             # Mask from the dipslay with everything that needs the outline
             display_mask = pygame.mask.from_surface(self.display)
@@ -208,7 +235,8 @@ class Game:
             for offset in [(-1, 0), (1, 0), (0, -1), (0, 1)]:   # Basicly rendering four dropshadows for everything
                 self.display_2.blit(display_sillhouette, offset)
 
-            # Particle management
+            # --- PARTICLE MANAGEMENT ---
+
             for particle in self.particles.copy():
                 kill = particle.update()
                 particle.render(self.display, offset=render_scroll)
@@ -234,7 +262,8 @@ class Game:
                     if event.key == pygame.K_RIGHT:
                         self.movement[1] = True
                     if event.key == pygame.K_UP:
-                        self.player.jump()      # Jumping using the function
+                        if self.player.jump():          # Runs the jumping function and as it is set up to return true if jump happens it can be used to play the sound effect
+                            self.sfx['jump'].play()
                     if event.key == pygame.K_x:
                         self.player.dash()
 
