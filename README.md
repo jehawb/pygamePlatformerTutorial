@@ -53,7 +53,7 @@ The editor reads from and writes to the file 'map.json' in project root.
 You can edit the playable maps by copying the map's json from 'data/maps/' folder in to the map.json and otherway around. 
 Adding new maps to the game is done by continuing the numbering in 'data/maps/' folder.
 
-Controls for the editor:
+### Controls for the editor:
 
 'Mouse scroll' changes the placable tile.
 
@@ -61,18 +61,18 @@ Controls for the editor:
 
 'Left mouse button' places the tile.
 
-'Right mouse button' deletes the tile cursor is hovering on.
+'Right mouse button' deletes the tile the cursor is hovering on top of.
 
 'o' saves the current map to map.json
 
 'g' toggles the grid on and off.
 
-Note! 
+### ‼️ Note ‼️
 
-As a rule of thumb place platform tiles into grid and player and enemy spawns to off grid.
-You can place the decor tiles either on to grid or off it.
+As a rule of thumb place platform tiles onto **grid** and player and enemy spawns **off grid**.
+You can place the decor tiles either onto grid or off it.
 
-The map will cause the game to crash if player or enemy spawners are placed on grid.
+The map will cause the game to crash if player or enemy spawners are placed onto grid.
 
 ## Building the game
 
