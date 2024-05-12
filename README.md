@@ -89,3 +89,5 @@ py -m PyInstaller game.py --noconsole
 ```
 
 The 'data' folder needs to be added to the newly created 'dist/game/' folder on the same level as the game.exe file.
+
+Using PyInstaller to package the game may cause anti-virus programs to flag it. Especially if using '--onefile' command. 
