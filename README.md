@@ -5,7 +5,7 @@
 This is a platformer game made with Python 3 and Pygame library. It follows closely DaFluffyPotato's Youtube video tutorial: 
 [![Pygame Platformer Tutorial - Full Course]([https://img.youtube.com/vi/2gABYM5M0ww/0.jpg)](https://www.youtube.com/watch?v=2gABYM5M0ww)
 
-All asset and code credits goes to him.
+All asset, code and design credits goes to him: https://dafluffypotato.com/
 
 ## Running the game.py
 
@@ -18,6 +18,10 @@ pip install pygame-ce
 or
 ```
 py pip install pygame-ce
+```
+or
+```
+pip install pygame
 ```
 You also need the 'data' folder for the game assets which you can get from DaFluffyPotato's website: https://dafluffypotato.com/assets/pg_tutorial
 
@@ -46,8 +50,8 @@ py editor.py
 ```
 
 The editor reads from and writes to the file 'map.json' in project root. 
-You can edit the playable maps by copying the map's json from data/maps/ folder in to the map.json and otherway around. 
-Adding new maps to the game is done by continuing the numbering in data/maps/ folder.
+You can edit the playable maps by copying the map's json from 'data/maps/' folder in to the map.json and otherway around. 
+Adding new maps to the game is done by continuing the numbering in 'data/maps/' folder.
 
 Controls for the editor:
 
